@@ -292,7 +292,19 @@ async function createBypassRequest(parsedUrl, realIP, options) {
 }
 
 export async function proxyAwareFetch(url, options = {}, proxyOptions = null) {
-  const targetUrl = typeof url === "string" ? url : url.toString();
+  const targetUrl = typeof url === "string" ? url : (url.url || url.toString());
+
+  if (process.env.CUSTOM_USER_AGENT) {
+    options = { ...options };
+    if (typeof Headers !== "undefined" && options.headers instanceof Headers) {
+      options.headers = new Headers(options.headers);
+      options.headers.set("User-Agent", process.env.CUSTOM_USER_AGENT);
+    } else {
+      options.headers = { ...options.headers };
+      const uaKey = Object.keys(options.headers).find(k => k.toLowerCase() === "user-agent") || "User-Agent";
+      options.headers[uaKey] = process.env.CUSTOM_USER_AGENT;
+    }
+  }
 
   // Vercel relay: forward request via relay headers
   const vercelRelayUrl = normalizeString(proxyOptions?.vercelRelayUrl);
